@@ -28,13 +28,24 @@ async function findEnrollment(userId: number) {
     });
   
     return enrollment;
-  }
+}
+async function findFirstTicketWithTicketType(enrollmentId: number) {
+  return prisma.ticket.findFirst({
+    where: {
+      enrollmentId,
+    },
+    include: {
+      TicketType: true,
+    },
+  });
+}
 
 
 
 const hotelsRepository = {
     findHotels,
     findHotelById,
-    findEnrollment
+    findEnrollment,
+    findFirstTicketWithTicketType
 }
 export default hotelsRepository;
