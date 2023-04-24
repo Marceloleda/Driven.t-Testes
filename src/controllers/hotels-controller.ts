@@ -16,6 +16,10 @@ async function getHotelsById(req: Request, res: Response, next: NextFunction) {
     const hotelId: string = req.params.hotelId;
     const idNumber: number = parseInt(hotelId, 10);
     try {
+      if (isNaN(idNumber)) {
+        console.log('O parâmetro "id" deve ser um número válido');
+        return res.sendStatus(httpStatus.BAD_REQUEST);
+      }
       const hotelById = await hotelService.getHotelById(idNumber);
       res.status(httpStatus.OK).send(hotelById);
     } catch (error) {
