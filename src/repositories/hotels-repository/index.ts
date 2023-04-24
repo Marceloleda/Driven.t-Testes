@@ -20,11 +20,17 @@ async function findHotelById(id: number): Promise<Hotel> {
     return hotelWithRooms;
 
 }
-async function findEnrollment(userId: number){
-    return prisma.enrollment.findFirst({
-        where: {id: userId}
+async function findEnrollment(userId: number) {
+    const enrollment = await prisma.enrollment.findFirst({
+      where: {
+        userId,
+      },
     });
-}
+  
+    return enrollment;
+  }
+
+
 
 const hotelsRepository = {
     findHotels,
