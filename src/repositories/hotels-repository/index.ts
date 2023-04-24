@@ -17,14 +17,18 @@ async function findHotelById(id: number): Promise<Hotel> {
     });
 
     if(!hotelWithRooms) throw notFoundError();
-
     return hotelWithRooms;
 
-
+}
+async function findEnrollment(userId: number){
+    return prisma.enrollment.findFirst({
+        where: {id: userId}
+    });
 }
 
 const hotelsRepository = {
     findHotels,
-    findHotelById
+    findHotelById,
+    findEnrollment
 }
 export default hotelsRepository;
