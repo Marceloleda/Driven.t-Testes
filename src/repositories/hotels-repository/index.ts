@@ -6,6 +6,15 @@ async function findHotels(): Promise<Hotel[]> {
     return prisma.hotel.findMany();
 }
 
-export default {
-    findHotels
+async function findHotelById(id: number): Promise<Hotel> {
+
+    return prisma.hotel.findFirst({
+        where: {id: id}
+    });
 }
+
+const hotelsRepository = {
+    findHotels,
+    findHotelById
+}
+export default hotelsRepository;
