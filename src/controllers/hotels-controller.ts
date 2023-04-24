@@ -8,8 +8,7 @@ async function getAllHotels(req:AuthenticatedRequest, res: Response): Promise<Re
     try{
         const hotels = await hotelService.getAllHotel();
         const enrollmentValid = await hotelService.validEnrollment(userId)
-        console.log(`tetstetete ${enrollmentValid}`)
-        if(hotels.length === 0 ){
+        if(hotels.length === 0 || enrollmentValid){
           return res.send(httpStatus.NOT_FOUND)
         }
         res.status(httpStatus.OK).send(hotels)
