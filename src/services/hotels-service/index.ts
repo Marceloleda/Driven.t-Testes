@@ -1,109 +1,40 @@
-import { Hotel, Ticket, Enrollment } from '@prisma/client';
-import httpStatus from 'http-status';
+import enrollmentRepository from '@/repositories/enrollment-repository';
 import { notFoundError } from '@/errors';
-import hotelsRepository from '@/repositories/hotels-repository';
-import { prisma } from '@/config';
+import ticketsRepository from '@/repositories/tickets-repository';
+import hotelRepository from '@/repositories/hotels-repository';
+import { cannotListHotelsError } from '@/errors/cannot-list-hotels-error';
 
-async function getAllHotel(): Promise<Hotel[]> {
-    const hotels: Hotel[] = await hotelsRepository.findHotels();
-    if (!hotels) throw notFoundError();
+async function listHotels(userId: number) {
+  const enrollment = await enrollmentRepository.findWithAddressByUserId(userId);
+  if (!enrollment) {
+    throw notFoundError();
+  }
+  const ticket = await ticketsRepository.findTicketByEnrollmentId(enrollment.id);
 
-    return hotels;
+  if (!ticket || ticket.status === 'RESERVED' || ticket.TicketType.isRemote || !ticket.TicketType.includesHotel) {
+    throw cannotListHotelsError(); 
+  }
 }
 
+async function getHotels(userId: number) {
+  await listHotels(userId);
 
-interface TicketsWithTicketType extends Ticket {
-  TicketType: {
-    isRemote: boolean;
-    includesHotel: boolean;
-  };
-}
-
-async function findHotels(): Promise<Hotel[]> {
-  const hotels: Hotel[] = await prisma.hotel.findMany();
-  if (!hotels) throw notFoundError();
-
+  const hotels = await hotelRepository.findHotels();
   return hotels;
 }
 
-async function findHotelById(id: number): Promise<Hotel> {
-  const hotel: Hotel = await prisma.hotel.findUnique({
-    where: { id },
-  });
-  if (!hotel) throw notFoundError();
+async function getHotelsWithRooms(userId: number, hotelId: number) {
+  await listHotels(userId);
 
+  const hotel = await hotelRepository.findRoomsByHotelId(hotelId);
+
+  if (!hotel) {
+    throw notFoundError();
+  }
   return hotel;
 }
 
-async function findEnrollment(userId: number): Promise<Enrollment> {
-  const enrollment: Enrollment = await prisma.enrollment.findFirst({
-    where: {
-      userId: userId,
-    },
-  });
-  if (!enrollment) throw notFoundError();
-
-  return enrollment;
-}
-
-async function findFirstTicketWithTicketType(
-  enrollmentId: number
-): Promise<TicketsWithTicketType> {
-  const ticket: TicketsWithTicketType = await prisma.ticket.findFirst({
-    where: {
-      enrollmentId: enrollmentId,
-    },
-    include: {
-      TicketType: true,
-    },
-  });
-
-  return ticket;
-}
-
-
-async function validEnrollment(userId: number) {
-    const enrollment = await hotelsRepository.findEnrollment(userId);
-  
-    if (!enrollment) {
-      return {
-        status: httpStatus.PAYMENT_REQUIRED,
-        message: 'Enrollment not found',
-      };
-    }
-    
-    const ticket = await prisma.ticket.findFirst({
-      where: {
-        enrollmentId: enrollment.id,
-      },
-      include: {
-        TicketType: true,
-      },
-    });
-  
-    if (
-      !ticket ||
-      ticket.TicketType.isRemote ||
-      !ticket.TicketType.includesHotel 
-    ) {
-      return {
-        status: httpStatus.PAYMENT_REQUIRED,
-        message: 'Ticket not paid, is remote or does not include hotel',
-      };
-    }
-  
-    return enrollment;
-  }
-
-
-
-const hotelService = {
-    getAllHotel,
-    validEnrollment,
-    findHotels,
-    findHotelById,
-    findEnrollment,
-    findFirstTicketWithTicketType,
-}
-
-export default hotelService;
+export default {
+  getHotels,
+  getHotelsWithRooms,
+};
